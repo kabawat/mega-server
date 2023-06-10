@@ -9,7 +9,7 @@ const upload = multer({ dest: 'uploads/' });
 const email = 'kshatriyakabawat@gmail.com';
 const password = 'MsNkys@143';
 app.use(cors())
-
+app.use('/', exress.static(path.join(__dirname, 'public/')))
 app.post('/upload', upload.single('file'), (req, res) => {
     const file = req.file;
 
