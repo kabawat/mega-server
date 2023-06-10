@@ -2,13 +2,13 @@ const express = require('express');
 const multer = require('multer');
 const mega = require('megajs');
 const fs = require('fs');
-
 const app = express();
-const upload = multer();
-
+const cors = require('cors')
 const email = 'kshatriyakabawat@gmail.com';
 const password = 'MsNkys@143';
 
+const upload = multer();
+app.use(cors())
 app.post('/upload', upload.single('file'), (req, res) => {
     const file = req.file;
 
@@ -22,10 +22,11 @@ app.post('/upload', upload.single('file'), (req, res) => {
             size: file.size // Add the file size to the uploadOptions
         };
 
-        const readStream = fs.createReadStream(file.buffer);
+        const readStream = require('stream').Readable.from(file.buffer);
         const writeStream = storage.upload(uploadOptions, readStream);
 
-        writeStream.on('uploadcomplete', () => {
+        writeStream.on('finish', () => {
+            console.log('here')
             res.send('File uploaded successfully');
         });
 
@@ -35,7 +36,6 @@ app.post('/upload', upload.single('file'), (req, res) => {
         });
     });
 });
-
 app.get('/file/:filename', (req, res) => {
     const storage = mega({ email, password, autoload: true });
     const filename = req.params.filename;
