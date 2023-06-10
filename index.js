@@ -9,7 +9,7 @@ const email = 'kshatriyakabawat@gmail.com';
 const password = 'MsNkys@143';
 app.use(cors());
 app.use(fileUpload());
-
+app.use('/', express.static(path.join(__dirname, 'public/')))
 app.post('/upload', (req, res) => {
     if (!req.files || !req.files.file) {
         return res.status(400).send('No file uploaded');
