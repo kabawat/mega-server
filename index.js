@@ -2,6 +2,7 @@ const express = require('express');
 const mega = require('megajs');
 const fs = require('fs');
 const cors = require('cors');
+const path = require('path')
 const fileUpload = require('express-fileupload');
 const app = express();
 
