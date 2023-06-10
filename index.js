@@ -1,43 +1,54 @@
 const express = require('express');
-const multer = require('multer');
 const mega = require('megajs');
 const fs = require('fs');
-const cors = require('cors')
+const cors = require('cors');
+const fileUpload = require('express-fileupload');
 const app = express();
-const upload = multer({ dest: 'uploads/' });
 
 const email = 'kshatriyakabawat@gmail.com';
 const password = 'MsNkys@143';
-app.use(cors())
-app.use('/', exress.static(path.join(__dirname, 'public/')))
-app.post('/upload', upload.single('file'), (req, res) => {
-    const file = req.file;
+app.use(cors());
+app.use(fileUpload());
 
-    const storage = mega({ email, password, autoload: true });
+app.post('/upload', (req, res) => {
+    if (!req.files || !req.files.file) {
+        return res.status(400).send('No file uploaded');
+    }
 
-    storage.on('ready', () => {
-        const uploadOptions = {
-            name: "recent-work-" + file.originalname,
-            target: storage.root,
-            attributes: { type: 'file' },
-            size: file.size // Add the file size to the uploadOptions
-        };
+    const file = req.files.file;
+    const tempFilePath = 'uploads/' + file.name;
 
-        const readStream = fs.createReadStream(file.path);
-        const writeStream = storage.upload(uploadOptions, readStream);
+    file.mv(tempFilePath, (error) => {
+        if (error) {
+            console.error('Error moving file:', error);
+            return res.status(500).send('Error uploading file');
+        }
 
-        writeStream.on('uploadcomplete', () => {
-            fs.unlinkSync(file.path);
+        const storage = mega({ email, password, autoload: true });
+
+        storage.on('ready', () => {
+            const uploadOptions = {
+                name: 'recent-work-' + file.name,
+                target: storage.root,
+                attributes: { type: 'file' },
+                size: file.size // Add the file size to the uploadOptions
+            };
+
+            const readStream = fs.createReadStream(tempFilePath);
+            const writeStream = storage.upload(uploadOptions, readStream);
+            writeStream.on('uploadcomplete', () => {
+                fs.unlinkSync(tempFilePath);
+            });
+
+            writeStream.on('error', (error) => {
+                console.error('Error uploading file:', error);
+                res.status(500).send('Error uploading file');
+            });
         });
 
-        writeStream.on('error', (error) => {
-            console.error('Error uploading file:', error);
-            res.status(500).send('Error uploading file');
-        });
+        res.send('File upload initiated successfully');
     });
-    res.send('File upload initiated successfully');
 });
-
 
 app.get('/file/:filename', (req, res) => {
     const storage = mega({ email, password, autoload: true });
@@ -47,7 +58,7 @@ app.get('/file/:filename', (req, res) => {
         const files = storage.root.children;
         let fileFound = false;
         for (const file of files) {
-            console.log(file.name)
+            console.log(file.name);
             if (file.name === filename) {
                 const downloadStream = file.download();
                 downloadStream.pipe(res);
@@ -61,9 +72,6 @@ app.get('/file/:filename', (req, res) => {
         }
     });
 });
-
-
-
 
 app.listen(2917, () => {
     console.log('Server is running on port 2917');
