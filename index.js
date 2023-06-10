@@ -1,52 +1,38 @@
 const express = require('express');
+const multer = require('multer');
 const mega = require('megajs');
 const fs = require('fs');
-const cors = require('cors');
-const fileUpload = require('express-fileupload');
+
 const app = express();
-const path = require('path')
+const upload = multer();
+
 const email = 'kshatriyakabawat@gmail.com';
 const password = 'MsNkys@143';
-app.use(cors());
-app.use(fileUpload());
-app.use('/', express.static(path.join(__dirname, 'public/')))
-const rootDir = path.dirname(__dirname)
-app.post('/upload', (req, res) => {
-    if (!req.files || !req.files.file) {
-        return res.status(400).send('No file uploaded');
-    }
-    console.log(rootDir)
-    const file = req.files.file;
-    const tempFilePath = path.join(rootDir, `public/uploads/${file?.name}`);
 
-    file.mv(tempFilePath, (error) => {
-        if (error) {
-            console.error('Error moving file:', error);
-            return res.status(500).send('Error uploading file');
-        }
+app.post('/upload', upload.single('file'), (req, res) => {
+    const file = req.file;
 
-        const storage = mega({ email, password, autoload: true });
-        storage.on('ready', () => {
-            const uploadOptions = {
-                name: 'recent-work-' + file.name,
-                target: storage.root,
-                attributes: { type: 'file' },
-                size: file.size // Add the file size to the uploadOptions
-            };
+    const storage = mega({ email, password, autoload: true });
 
-            const readStream = fs.createReadStream(tempFilePath);
-            const writeStream = storage.upload(uploadOptions, readStream);
-            writeStream.on('uploadcomplete', () => {
-                fs.unlinkSync(tempFilePath);
-            });
+    storage.on('ready', () => {
+        const uploadOptions = {
+            name: "recent-work-" + file.originalname,
+            target: storage.root,
+            attributes: { type: 'file' },
+            size: file.size // Add the file size to the uploadOptions
+        };
 
-            writeStream.on('error', (error) => {
-                console.error('Error uploading file:', error);
-                res.status(500).send('Error uploading file');
-            });
+        const readStream = fs.createReadStream(file.buffer);
+        const writeStream = storage.upload(uploadOptions, readStream);
+
+        writeStream.on('uploadcomplete', () => {
+            res.send('File uploaded successfully');
         });
 
-        res.send('File upload initiated successfully');
+        writeStream.on('error', (error) => {
+            console.error('Error uploading file:', error);
+            res.status(500).send('Error uploading file');
+        });
     });
 });
 
@@ -58,7 +44,7 @@ app.get('/file/:filename', (req, res) => {
         const files = storage.root.children;
         let fileFound = false;
         for (const file of files) {
-            console.log(file.name);
+            console.log(file.name)
             if (file.name === filename) {
                 const downloadStream = file.download();
                 downloadStream.pipe(res);
