@@ -17,7 +17,7 @@ app.post('/upload', (req, res) => {
     }
     console.log(rootDir)
     const file = req.files.file;
-    const tempFilePath = path.join(rootDir, 'uploads', `${file.name}`)
+    const tempFilePath = path.join(rootDir, `public/uploads/${file?.name}`);
 
     file.mv(tempFilePath, (error) => {
         if (error) {
