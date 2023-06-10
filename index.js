@@ -2,22 +2,22 @@ const express = require('express');
 const mega = require('megajs');
 const fs = require('fs');
 const cors = require('cors');
-const path = require('path')
 const fileUpload = require('express-fileupload');
 const app = express();
-
+const path = require('path')
 const email = 'kshatriyakabawat@gmail.com';
 const password = 'MsNkys@143';
 app.use(cors());
 app.use(fileUpload());
 app.use('/', express.static(path.join(__dirname, 'public/')))
 app.post('/upload', (req, res) => {
+    const rootDir = path.dirname(require.main.filename)
     if (!req.files || !req.files.file) {
         return res.status(400).send('No file uploaded');
     }
 
     const file = req.files.file;
-    const tempFilePath = 'uploads/' + file.name;
+    const tempFilePath = path.join(rootDir, 'uploads', `${file.name}`)
 
     file.mv(tempFilePath, (error) => {
         if (error) {
